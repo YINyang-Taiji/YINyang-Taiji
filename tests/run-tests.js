@@ -331,15 +331,15 @@ function fixtureRoot() {
   fs.writeFileSync(path.join(tmp, 'USER.md'), `---
 summary: "User profile record"
 ---
-- **Name:** 主公
-- **What to call them:** 主公
-- **City:** 长春
-- **Notes:** Windows系统Administrator账户，从事微信自动化采集脚本开发（wechat_detect项目），uiautomator2/ADB/OCR技术栈。偏好简洁直接的交流风格，行动导向。
+- **Name:** 测试用户
+- **What to call them:** 测试用户
+- **City:** 测试市
+- **Notes:** Windows系统本地账户，从事数据采集脚本开发（demo_crawl项目），uiautomator2/ADB/OCR技术栈。偏好简洁直接的交流风格，行动导向。
 `);
   fs.writeFileSync(path.join(tmp, 'IDENTITY.md'), `# IDENTITY.md - Who Am I?
 - **Name:** 助理
 - **Creature:** 全栈工程师型AI — 代码即语言，架构即思想
-- **Vibe:** 干练直接、一针见血，少废话多出活。深度技术洞察 + 战略思维，主公的超级助手。
+- **Vibe:** 干练直接、一针见血，少废话多出活。深度技术洞察 + 战略思维，专属超级助手。
 `);
   fs.writeFileSync(path.join(tmp, 'SOUL.md'), `# SOUL.md
 ## 核心信念
@@ -375,9 +375,9 @@ summary: "User profile record"
 
 test('parseUser extracts name/city/notes', () => {
   const u = observe.parseUser(fs.readFileSync(path.join(fixtureRoot(), 'USER.md'), 'utf8'));
-  assert.strictEqual(u.name, '主公');
-  assert.strictEqual(u.city, '长春');
-  assert.ok(u.notes.includes('wechat_detect'));
+  assert.strictEqual(u.name, '测试用户');
+  assert.strictEqual(u.city, '测试市');
+  assert.ok(u.notes.includes('demo_crawl'));
 });
 
 test('parseSoul extracts beliefs and boundaries', () => {
@@ -425,7 +425,7 @@ test('analyzeSessions derives peak/sleep from mtime histogram', () => {
 
 test('observe integrates session schedule into profile', () => {
   const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'observe-sess2-'));
-  fs.writeFileSync(path.join(tmp, 'USER.md'), '- **Name:** 主公\n- **City:** 长春\n');
+  fs.writeFileSync(path.join(tmp, 'USER.md'), '- **Name:** 测试用户\n- **City:** 测试市\n');
   fs.writeFileSync(path.join(tmp, 'SOUL.md'), '## 核心信念\n1. 保持聪明\n## 行为边界\n1. 严格保护隐私\n');
   const sess = path.join(tmp, 'sessions');
   fs.mkdirSync(path.join(sess, 's1', 'modify_backup'), { recursive: true });
@@ -451,8 +451,8 @@ test('empty docs -> generic profile, no hardcoded user content', () => {
   assert.ok(ex.identity.values.length >= 1);
   assert.ok(ex.identity.guardrails.length >= 1);
   assert.strictEqual(ex.evidence.common_software.length, 0);
-  // 不得残留任何主公专属硬编码
-  for (const k of ['主公的超级助手', 'A股', 'westock', '长春', '08:30', '猫猫', '签到', '只执行不修改已定型代码', '00:30']) {
+  // 不得残留任何用户专属硬编码
+  for (const k of ['测试用户', '测试市', '专属超级助手', 'A股', 'westock', '08:30', '猫猫', '签到', '只执行不修改已定型代码', '00:30']) {
     assert.strictEqual(s.includes(k), false, '泛化后仍含硬编码: ' + k);
   }
 });
@@ -469,7 +469,7 @@ test('different user docs -> derives THEIR persona, not ours', () => {
   assert.ok(ex.identity.persona.roles.some((r) => r.name === '数据分析专家AI'));
   assert.ok(ex.identity.guardrails.some((g) => g.rule.includes('脱敏')));
   assert.ok(ex.preferences.ai_requirements.some((a) => a.requirement.includes('数据口径')));
-  assert.strictEqual(JSON.stringify(ex).includes('主公'), false);
+  assert.strictEqual(JSON.stringify(ex).includes('测试用户'), false);
 });
 
 console.log(`\n=== 结果：${pass} 通过，${fail} 失败 ===`);

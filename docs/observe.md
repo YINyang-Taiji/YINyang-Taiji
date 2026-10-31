@@ -43,7 +43,7 @@ apply(profile, extracted)  → 仅填充空位（不覆盖已有非空字段）�
 | 档案字段 | 来源 | 实测值 |
 |---|---|---|
 | `identity.persona.primary_role` | IDENTITY.md `Creature` 首段 | 全栈工程师型AI |
-| `identity.persona.roles[]` | IDENTITY.md `Creature`/`Vibe` | 全栈工程师型AI；主公的超级助手 |
+| `identity.persona.roles[]` | IDENTITY.md `Creature`/`Vibe` | 全栈工程师型AI；专属超级助手 |
 | `identity.tone.default` | SOUL.md 语气风格 | 简洁直接、逻辑清晰、不冗余、不客套；关键结论前置 |
 | `identity.values[]` | SOUL.md 核心信念 | 12 条（含"四步思考循环""对抗模型惯性"等） |
 | `identity.guardrails[]` | SOUL.md 行为边界 | 6 条（隐私 hard / 破坏性需确认 hard / 深夜不打扰 soft…） |
@@ -73,7 +73,7 @@ apply(profile, extracted)  → 仅填充空位（不覆盖已有非空字段）�
 
 ```bash
 node src/cli.js init --timezone Asia/Shanghai
-node src/cli.js observe --root "C:\Users\Administrator\.workbuddy" --timezone Asia/Shanghai
+node src/cli.js observe --root "~/.workbuddy" --timezone Asia/Shanghai
 node src/cli.js export -o profile.zip --password ***
 ```
 
@@ -131,5 +131,5 @@ USER.md `Name: 张伟`、IDENTITY.md `数据分析专家AI — 数据驱动决�
 用 `edit` 覆盖任意字段（见 §9），**不被观察结果限定**。
 
 ### 注意
-- 剩余内容（如本机"主公的超级助手""长春"）来自用户**真实数据**（IDENTITY.md / USER.md），非硬编码；换用户即换内容。
+- 剩余内容（如本机专属助手名/城市）来自用户**真实数据**（IDENTITY.md / USER.md），非硬编码；换用户即换内容。
 - 单元测试：`empty docs -> generic profile`、`different user docs -> derives THEIR persona` 验证上述泛化。
