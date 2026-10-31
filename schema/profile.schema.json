@@ -1,0 +1,537 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-personal-profile.dev/schema/profile.schema.json",
+  "title": "AI Personal Profile",
+  "description": "可移植、可复用的个人 AI 画像包 —— 核心结构化数据。机器逻辑一律走本 Schema（严格校验）；同包内的 .md 仅作为人类可读摘要。",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "meta",
+    "identity",
+    "preferences",
+    "evidence",
+    "capabilities"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "description": "本文件遵循的 Schema 版本，语义化版本。",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["1.0.0"]
+    },
+
+    "meta": {
+      "description": "档案元数据：版本、来源、新鲜度、加密声明。",
+      "type": "object",
+      "required": [
+        "profile_id",
+        "profile_revision",
+        "base_revision",
+        "created_at",
+        "updated_at",
+        "source_device",
+        "timezone",
+        "encryption"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "profile_id": {
+          "description": "匿名档案 ID = 哈希(用户名+盐)，用于跨机关联，不暴露真实用户名。",
+          "type": "string",
+          "minLength": 16
+        },
+        "profile_revision": {
+          "description": "档案当前修订号，每次合并/导入自增。",
+          "type": "integer",
+          "minimum": 0
+        },
+        "base_revision": {
+          "description": "本档案基于的父修订号，用于冲突检测与合并。",
+          "type": "integer",
+          "minimum": 0
+        },
+        "created_at": {
+          "description": "创建时间，必须为 UTC ISO 8601。",
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "description": "最后更新时间，必须为 UTC ISO 8601。",
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_device": {
+          "description": "生成/最后更新的设备匿名标识（主机名哈希），不存真实主机名。",
+          "type": "string"
+        },
+        "timezone": {
+          "description": "用户主要时区（IANA），用于作息/时间轴解释。",
+          "type": "string",
+          "examples": ["Asia/Shanghai", "America/Los_Angeles"]
+        },
+        "encryption": {
+          "description": "加密声明。外层容器加密使用 AES-256-GCM。",
+          "type": "object",
+          "required": ["algorithm", "key_derivation", "kdf_params"],
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "type": "string",
+              "const": "AES-256-GCM"
+            },
+            "key_derivation": {
+              "type": "string",
+              "const": "PBKDF2-HMAC-SHA256"
+            },
+            "kdf_params": {
+              "type": "object",
+              "required": ["iterations", "salt_b64"],
+              "additionalProperties": false,
+              "properties": {
+                "iterations": {
+                  "type": "integer",
+                  "minimum": 100000
+                },
+                "salt_b64": {
+                  "type": "string",
+                  "description": "Base64 编码的随机盐（≥16 字节）。"
+                }
+              }
+            }
+          }
+        },
+        "freshness": {
+          "description": "整体新鲜度状态，由引擎基于各条目 last_validated 计算。",
+          "type": "object",
+          "required": ["status", "stale_since"],
+          "additionalProperties": false,
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["fresh", "aging", "stale"]
+            },
+            "stale_since": {
+              "type": ["string", "null"],
+              "format": "date-time",
+              "description": "判定为 stale 的时间（UTC），fresh/aging 时为 null。"
+            }
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "用户自定义标签，便于分类检索。"
+        }
+      }
+    },
+
+    "identity": {
+      "description": "身份层：角色、人格、语气、价值观、红线、负面特质。这是 AI 复用的核心。",
+      "type": "object",
+      "required": ["persona", "tone", "values", "guardrails"],
+      "additionalProperties": false,
+      "properties": {
+        "persona": {
+          "description": "角色/人格画像，可含多个角色，每个带权重。",
+          "type": "object",
+          "required": ["primary_role", "roles"],
+          "additionalProperties": false,
+          "properties": {
+            "primary_role": { "type": "string" },
+            "roles": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "description", "confidence"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "confidence": { "$ref": "#/$defs/confidence" },
+                  "triggers": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "进入该角色的触发场景/指令。"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tone": {
+          "description": "语气/表达风格画像。",
+          "type": "object",
+          "required": ["default", "traits"],
+          "additionalProperties": false,
+          "properties": {
+            "default": { "type": "string" },
+            "traits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["trait", "confidence"],
+                "additionalProperties": false,
+                "properties": {
+                  "trait": { "type": "string" },
+                  "confidence": { "$ref": "#/$defs/confidence" }
+                }
+              }
+            }
+          }
+        },
+        "values": {
+          "description": "价值观/原则，AI 应遵循的指导性准则。",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "guardrails": {
+          "description": "安全/合规红线（P0 关键）：明确不可为的行为。",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rule", "severity"],
+            "additionalProperties": false,
+            "properties": {
+              "rule": { "type": "string" },
+              "severity": {
+                "type": "string",
+                "enum": ["hard", "soft"],
+                "description": "hard=绝对禁止；soft=默认避免，可被用户显式覆盖。"
+              },
+              "scope": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "该红线适用的平台/场景，空数组=全局。"
+              }
+            }
+          }
+        },
+        "negative_traits": {
+          "description": "负面特质/不喜好的角色行为，AI 应主动规避。",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "preferences": {
+      "description": "偏好层：对 AI 的要求、功能设置、默认参数、输出风格、负向偏好、例外、边界情况。",
+      "type": "object",
+      "required": [
+        "ai_requirements",
+        "feature_settings",
+        "output_style",
+        "negative_preferences",
+        "exceptions",
+        "edge_cases"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "ai_requirements": {
+          "description": "用户对 AI 平台/模型的具体要求。",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["requirement", "priority"],
+            "additionalProperties": false,
+            "properties": {
+              "requirement": { "type": "string" },
+              "priority": {
+                "type": "string",
+                "enum": ["must", "should", "nice"]
+              }
+            }
+          }
+        },
+        "feature_settings": {
+          "description": "功能设置/默认开关。键值对，值可为任意 JSON。",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "output_style": {
+          "description": "输出偏好：长度、格式、语言、专业度等。",
+          "type": "object",
+          "required": ["language", "verbosity"],
+          "additionalProperties": false,
+          "properties": {
+            "language": {
+              "type": "string",
+              "enum": ["zh-CN", "en-US", "ja-JP", "auto"]
+            },
+            "verbosity": {
+              "type": "string",
+              "enum": ["terse", "normal", "detailed"]
+            },
+            "format_preference": {
+              "type": "string",
+              "enum": ["markdown", "plain", "code_first", "auto"]
+            },
+            "professionalism": {
+              "type": "string",
+              "enum": ["casual", "semi_formal", "formal"]
+            },
+            "max_output_length": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "description": "期望的最大输出长度（字符），null=无限制。"
+            }
+          }
+        },
+        "negative_preferences": {
+          "description": "负向偏好（P2 关键）：明确不喜欢/不要的内容、主题、指令类型。",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["item", "confidence"],
+            "additionalProperties": false,
+            "properties": {
+              "item": { "type": "string" },
+              "confidence": { "$ref": "#/$defs/confidence" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "exceptions": {
+          "description": "例外场景：特定平台/场景下覆盖默认偏好。",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["condition", "override"],
+            "additionalProperties": false,
+            "properties": {
+              "condition": { "type": "string" },
+              "override": { "type": "object", "additionalProperties": true }
+            }
+          }
+        },
+        "edge_cases": {
+          "description": "边界情况处理规则（P2 关键）：如上下文超长时优先保留什么。",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["case", "strategy"],
+            "additionalProperties": false,
+            "properties": {
+              "case": { "type": "string" },
+              "strategy": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "evidence": {
+      "description": "证据层：习惯、作息、常用软件、行为时间轴、历史作品引用。所有条目带置信度与新鲜度。",
+      "type": "object",
+      "required": ["habits", "schedule", "common_software", "timeline", "artifacts"],
+      "additionalProperties": false,
+      "properties": {
+        "habits": {
+          "description": "观察到的行为习惯，每条带置信度。",
+          "type": "array",
+          "items": { "$ref": "#/$defs/observation" }
+        },
+        "schedule": {
+          "description": "作息安排，可含周期性规律。",
+          "type": "object",
+          "required": ["work_hours", "sleep_window"],
+          "additionalProperties": false,
+          "properties": {
+            "work_hours": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/time_window" },
+              "description": "主要工作时段（含时区）。"
+            },
+            "sleep_window": {
+              "oneOf": [
+                { "$ref": "#/$defs/time_window" },
+                { "type": "null" }
+              ],
+              "description": "睡眠时段；新档案尚未观察时可为 null。"
+            },
+            "peak_focus_periods": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/time_window" },
+              "description": "高效专注时段。"
+            },
+            "weekly_pattern": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["day", "activity"],
+                "additionalProperties": false,
+                "properties": {
+                  "day": {
+                    "type": "string",
+                    "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+                  },
+                  "activity": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "common_software": {
+          "description": "常用软件信息：名称、用途、使用频率、平台。",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "purpose", "frequency"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "purpose": { "type": "string" },
+              "frequency": {
+                "type": "string",
+                "enum": ["daily", "weekly", "monthly", "occasional"]
+              },
+              "os": {
+                "type": "array",
+                "items": { "type": "string", "enum": ["windows", "linux", "macos", "web"] }
+              },
+              "confidence": { "$ref": "#/$defs/confidence" }
+            }
+          }
+        },
+        "timeline": {
+          "description": "行为时间轴：关键行为事件，按时间排序。",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "event", "location"],
+            "additionalProperties": false,
+            "properties": {
+              "at": { "type": "string", "format": "date-time", "description": "UTC 时间。注意：精确地点默认脱敏。" },
+              "event": { "type": "string" },
+              "location": {
+                "type": "object",
+                "required": ["granularity"],
+                "additionalProperties": false,
+                "properties": {
+                  "granularity": {
+                    "type": "string",
+                    "enum": ["country", "region", "city", "district", "none"]
+                  },
+                  "city": { "type": ["string", "null"] },
+                  "timezone": { "type": ["string", "null"] },
+                  "note": { "type": "string", "description": "默认不存精确 GPS/地址，仅存城市级。机密层可开启更细粒度。" }
+                }
+              },
+              "confidence": { "$ref": "#/$defs/confidence" },
+              "source": { "type": "string" }
+            }
+          }
+        },
+        "artifacts": {
+          "description": "历史作品/产出引用：作品名、所属 AI 平台、链接/路径引用。",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["title", "platform", "created_at"],
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string" },
+              "platform": { "type": "string", "description": "产出该作品的 AI 平台。", "examples": ["chatgpt", "claude", "gemini", "deepseek", "local"] },
+              "created_at": { "type": "string", "format": "date-time" },
+              "reference": { "type": "string", "description": "作品引用（本地路径或链接），默认不含敏感内容。" },
+              "tags": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+
+    "capabilities": {
+      "description": "能力声明层：该档案适配的平台与能力范围，供能力协商使用。",
+      "type": "object",
+      "required": ["platforms", "adapters"],
+      "additionalProperties": false,
+      "properties": {
+        "platforms": {
+          "description": "该档案已适配/验证过的平台列表。",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["platform", "adapter", "status"],
+            "additionalProperties": false,
+            "properties": {
+              "platform": { "type": "string" },
+              "adapter": { "type": "string", "description": "适配器名称，如 'openai-chatgpt'。" },
+              "status": {
+                "type": "string",
+                "enum": ["verified", "experimental", "planned"]
+              },
+              "last_verified_at": { "type": ["string", "null"], "format": "date-time" }
+            }
+          }
+        },
+        "adapters": {
+          "description": "适配器清单：每个适配器声明其消费能力，用于能力协商。",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "consumes", "produces"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "consumes": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "该适配器消费的档案字段路径，如 'identity.persona'。"
+              },
+              "produces": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "该适配器输出到目标平台的上下文块类型，如 'system_prompt'。"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "confidence": {
+      "description": "置信度 0~1，与出现次数共同决定是否写入主档案（低于阈值仅入候选区）。",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "observation": {
+      "description": "通用观察条目：带置信度、出现次数、新鲜度、来源。",
+      "type": "object",
+      "required": ["kind", "value", "confidence", "occurrence_count", "first_seen", "last_seen", "last_validated"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "观察类型，如 'habit'、'prompt_pattern'、'thinking_style'。",
+          "examples": ["habit", "prompt_pattern", "thinking_style", "interaction_style"]
+        },
+        "value": { "type": "string" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "occurrence_count": { "type": "integer", "minimum": 1 },
+        "first_seen": { "type": "string", "format": "date-time" },
+        "last_seen": { "type": "string", "format": "date-time" },
+        "last_validated": { "type": "string", "format": "date-time", "description": "新鲜度基准：超过有效期标记为 stale。" },
+        "source": { "type": "string", "description": "证据来源，如 'explicit'、'observation:chatgpt'。" },
+        "stale": { "type": "boolean", "description": "引擎计算出的新鲜度标记，默认 false。" }
+      }
+    },
+    "time_window": {
+      "description": "时间段（含时区），用于作息/高峰时段。",
+      "type": "object",
+      "required": ["start", "end", "timezone"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+        "end": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+        "timezone": { "type": "string", "examples": ["Asia/Shanghai"] },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    }
+  }
+}

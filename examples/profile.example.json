@@ -1,0 +1,182 @@
+{
+  "schema_version": "1.0.0",
+  "meta": {
+    "profile_id": "a3f5c8e1d9b2476f8a1c3e5d7b9f0a2c",
+    "profile_revision": 4,
+    "base_revision": 3,
+    "created_at": "2026-09-01T09:30:00Z",
+    "updated_at": "2026-10-28T12:00:00Z",
+    "source_device": "f0e1d2c3b4a5",
+    "timezone": "Asia/Shanghai",
+    "encryption": {
+      "algorithm": "AES-256-GCM",
+      "key_derivation": "PBKDF2-HMAC-SHA256",
+      "kdf_params": {
+        "iterations": 310000,
+        "salt_b64": "c2FsdHNhbHRzYWx0c2FsdA=="
+      }
+    },
+    "freshness": {
+      "status": "fresh",
+      "stale_since": null
+    },
+    "tags": ["developer", "multi-platform"]
+  },
+  "identity": {
+    "persona": {
+      "primary_role": "全栈工程师 / AI 助手",
+      "roles": [
+        {
+          "name": "全栈工程师",
+          "description": "偏好用简洁、可维护的代码，优先考虑类型安全与可读性。",
+          "confidence": 0.92,
+          "triggers": ["写代码", "debug", "架构评审"]
+        },
+        {
+          "name": "技术写作",
+          "description": "输出结构清晰、带示例的中文技术文档。",
+          "confidence": 0.78,
+          "triggers": ["写文档", "写教程"]
+        }
+      ]
+    },
+    "tone": {
+      "default": "直接、务实、少客套",
+      "traits": [
+        { "trait": "结论先行", "confidence": 0.85 },
+        { "trait": "给出可执行建议而非泛泛而谈", "confidence": 0.8 }
+      ]
+    },
+    "values": [
+      "默认类型安全，避免 any",
+      "优先可读性，命名表意",
+      "不引入无谓依赖"
+    ],
+    "guardrails": [
+      { "rule": "不输出医疗/法律/投资建议", "severity": "hard" },
+      { "rule": "不主动联网获取未授权数据", "severity": "hard" },
+      { "rule": "不发送未脱敏的客户数据", "severity": "hard" },
+      { "rule": "避免过度设计", "severity": "soft" }
+    ],
+    "negative_traits": [
+      "啰嗦的开场白",
+      "未经确认的大规模重构建议"
+    ]
+  },
+  "preferences": {
+    "ai_requirements": [
+      { "requirement": "代码输出需含类型标注", "priority": "must" },
+      { "requirement": "中文回答，代码注释中文", "priority": "should" },
+      { "requirement": "长回答用 Markdown 分节", "priority": "nice" }
+    ],
+    "feature_settings": {
+      "auto_retry_on_429": true,
+      "show_reasoning": false,
+      "default_temperature": 0.2
+    },
+    "output_style": {
+      "language": "zh-CN",
+      "verbosity": "normal",
+      "format_preference": "markdown",
+      "professionalism": "semi_formal",
+      "max_output_length": 8000
+    },
+    "negative_preferences": [
+      { "item": "不要给出未经来源标注的数据", "confidence": 0.88, "reason": "曾引用不可靠数据" },
+      { "item": "不要直接重写整个项目文件", "confidence": 0.75 }
+    ],
+    "exceptions": [
+      {
+        "condition": "平台=chatgpt 且任务=头脑风暴",
+        "override": { "verbosity": "detailed", "max_output_length": null }
+      }
+    ],
+    "edge_cases": [
+      { "case": "上下文超长", "strategy": "保留 identity(红线>角色) + output_style，裁剪 timeline 细节" },
+      { "case": "请求超时", "strategy": "重试 1 次后给出部分结果" }
+    ]
+  },
+  "evidence": {
+    "habits": [
+      {
+        "kind": "thinking_style",
+        "value": "先讲方案权衡（时间/复杂度/可维护），再给代码",
+        "confidence": 0.82,
+        "occurrence_count": 14,
+        "first_seen": "2026-09-10T03:00:00Z",
+        "last_seen": "2026-10-26T10:00:00Z",
+        "last_validated": "2026-10-26T10:00:00Z",
+        "source": "observation:codex",
+        "stale": false
+      },
+      {
+        "kind": "prompt_pattern",
+        "value": "先贴报错堆栈，再贴相关代码片段，最后问方案",
+        "confidence": 0.76,
+        "occurrence_count": 9,
+        "first_seen": "2026-09-15T05:00:00Z",
+        "last_seen": "2026-10-20T08:00:00Z",
+        "last_validated": "2026-10-20T08:00:00Z",
+        "source": "observation:chatgpt",
+        "stale": false
+      }
+    ],
+    "schedule": {
+      "work_hours": [
+        { "start": "09:00", "end": "12:00", "timezone": "Asia/Shanghai", "confidence": 0.8 },
+        { "start": "14:00", "end": "19:00", "timezone": "Asia/Shanghai", "confidence": 0.75 }
+      ],
+      "sleep_window": { "start": "23:30", "end": "07:30", "timezone": "Asia/Shanghai", "confidence": 0.7 },
+      "peak_focus_periods": [
+        { "start": "10:00", "end": "11:30", "timezone": "Asia/Shanghai", "confidence": 0.85 }
+      ],
+      "weekly_pattern": [
+        { "day": "mon", "activity": "代码评审 + 开发" },
+        { "day": "fri", "activity": "周报 + 技术文档" }
+      ]
+    },
+    "common_software": [
+      { "name": "VS Code", "purpose": "代码编辑", "frequency": "daily", "os": ["windows", "linux"], "confidence": 0.95 },
+      { "name": "Git", "purpose": "版本控制", "frequency": "daily", "os": ["windows", "linux"], "confidence": 0.95 },
+      { "name": "Docker", "purpose": "容器化", "frequency": "weekly", "os": ["linux", "windows"], "confidence": 0.8 }
+    ],
+    "timeline": [
+      {
+        "at": "2026-10-20T10:00:00Z",
+        "event": "重构订单模块，统一错误处理",
+        "location": { "granularity": "city", "city": "Shanghai", "timezone": "Asia/Shanghai", "note": "城市级，不存精确地址" },
+        "confidence": 0.9,
+        "source": "explicit"
+      }
+    ],
+    "artifacts": [
+      {
+        "title": "订单服务重构方案",
+        "platform": "deepseek",
+        "created_at": "2026-10-20T10:30:00Z",
+        "reference": "archives/order-refactor-20261020.md",
+        "tags": ["refactor", "backend"]
+      }
+    ]
+  },
+  "capabilities": {
+    "platforms": [
+      { "platform": "chatgpt", "adapter": "openai-chatgpt", "status": "experimental", "last_verified_at": null },
+      { "platform": "generic-openai-compat", "adapter": "generic", "status": "verified", "last_verified_at": "2026-10-25T09:00:00Z" }
+    ],
+    "adapters": [
+      {
+        "id": "openai-chatgpt",
+        "name": "OpenAI ChatGPT",
+        "consumes": ["identity.persona", "identity.tone", "identity.guardrails", "preferences.output_style"],
+        "produces": ["developer_message", "system_message"]
+      },
+      {
+        "id": "generic",
+        "name": "Generic OpenAI-compatible",
+        "consumes": ["identity.persona", "preferences.output_style"],
+        "produces": ["system_prompt"]
+      }
+    ]
+  }
+}

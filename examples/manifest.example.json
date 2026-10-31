@@ -1,0 +1,46 @@
+{
+  "format_version": "1.0",
+  "manifest_version": "1.0",
+  "schema_version": "1.0.0",
+  "generated_at": "2026-10-28T12:00:00Z",
+  "profile_id": "a3f5c8e1d9b2476f8a1c3e5d7b9f0a2c",
+  "profile_revision": 4,
+  "base_revision": 3,
+  "checksum": {
+    "algorithm": "sha256",
+    "files": {
+      "data/profile.json": { "sha256": "0000000000000000000000000000000000000000000000000000000000000000", "size": 0 },
+      "identity.md": { "sha256": "0000000000000000000000000000000000000000000000000000000000000000", "size": 0 }
+    }
+  },
+  "entries": [
+    { "path": "manifest.json", "role": "metadata", "schema_ref": "https://ai-personal-profile.dev/schema/manifest.schema.json" },
+    { "path": "identity.md", "role": "human-readable" },
+    { "path": "preferences.md", "role": "human-readable" },
+    { "path": "timeline.md", "role": "human-readable" },
+    { "path": "data/profile.json", "role": "machine-data", "schema_ref": "https://ai-personal-profile.dev/schema/profile.schema.json" },
+    { "path": "data/schema.json", "role": "machine-data" },
+    { "path": "observations/", "role": "observations" },
+    { "path": "artifacts/", "role": "artifacts" },
+    { "path": "adapters/openai-chatgpt.json", "role": "adapter-config" }
+  ],
+  "encryption": {
+    "enabled": true,
+    "algorithm": "AES-256-GCM",
+    "key_derivation": "PBKDF2-HMAC-SHA256",
+    "kdf_params": {
+      "iterations": 310000,
+      "salt_b64": "c2FsdHNhbHRzYWx0c2FsdA==",
+      "iv_b64": "AAAAAAAAAAAAAAAA"
+    }
+  },
+  "sensitivity": {
+    "public": ["identity.persona", "identity.tone", "preferences.output_style"],
+    "private": ["evidence.habits", "evidence.schedule", "evidence.common_software", "evidence.artifacts"],
+    "secret": ["evidence.timeline.location", "evidence.timeline.note"]
+  },
+  "source": {
+    "source_device": "f0e1d2c3b4a5",
+    "naming": { "scheme": "timestamp+host-hash+user", "anonymous": true, "custom_name": null }
+  }
+}

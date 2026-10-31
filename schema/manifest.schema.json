@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-personal-profile.dev/schema/manifest.schema.json",
+  "title": "AI Personal Profile Manifest",
+  "description": "ZIP 容器内 manifest.json 的结构：版本、完整性、目录布局与加密声明。机器逻辑用本 Schema 校验 manifest；profile.schema.json 校验 data/profile.json。",
+  "type": "object",
+  "required": [
+    "format_version",
+    "manifest_version",
+    "schema_version",
+    "generated_at",
+    "profile_revision",
+    "base_revision",
+    "checksum",
+    "entries",
+    "encryption"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "description": "档案包格式版本（ZIP 布局演进用，独立于数据 Schema）。",
+      "type": "string",
+      "const": "1.0"
+    },
+    "manifest_version": {
+      "description": "本 manifest 结构自身的版本。",
+      "type": "string",
+      "const": "1.0"
+    },
+    "schema_version": {
+      "description": "data/profile.json 遵循的 profile.schema.json 版本。",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "generated_at": {
+      "description": "生成时间，必须为 UTC ISO 8601。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "profile_id": {
+      "description": "匿名档案 ID，与 data/profile.json 的 meta.profile_id 一致，用于跨机关联。",
+      "type": "string",
+      "minLength": 16
+    },
+    "profile_revision": {
+      "description": "档案修订号，与 meta.profile_revision 一致。每次合并/导入自增。",
+      "type": "integer",
+      "minimum": 0
+    },
+    "base_revision": {
+      "description": "父修订号，用于冲突检测与合并。",
+      "type": "integer",
+      "minimum": 0
+    },
+    "checksum": {
+      "description": "包内各文件的 SHA-256 校验和，用于导入时完整性校验。",
+      "type": "object",
+      "required": ["algorithm", "files"],
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "const": "sha256"
+        },
+        "files": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["sha256", "size"],
+            "additionalProperties": false,
+            "properties": {
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "description": "键为包内相对路径（以 / 分隔），值为其 SHA-256 与字节大小。"
+        }
+      }
+    },
+    "entries": {
+      "description": "包内文件清单与角色声明（人读摘要 / 机器数据 / 原始证据 / 附件 / 适配器）。",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "role"],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "包内相对路径，使用 / 分隔，不得以 / 开头或包含 .."
+          },
+          "role": {
+            "type": "string",
+            "enum": ["human-readable", "machine-data", "observations", "artifacts", "adapter-config", "metadata"]
+          },
+          "schema_ref": {
+            "type": ["string", "null"],
+            "description": "若该文件需按某 Schema 校验，填写其 URI。"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "encryption": {
+      "description": "加密声明。true 时外层容器用 AES-256-GCM 加密，密文存储在 ZIP 的 encrypted/ 下；密钥派生参数在此声明。",
+      "type": "object",
+      "required": ["enabled", "algorithm", "key_derivation", "kdf_params"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "algorithm": { "type": "string", "const": "AES-256-GCM" },
+        "key_derivation": { "type": "string", "const": "PBKDF2-HMAC-SHA256" },
+        "kdf_params": {
+          "type": "object",
+          "required": ["iterations", "salt_b64", "iv_b64"],
+          "additionalProperties": false,
+          "properties": {
+            "iterations": { "type": "integer", "minimum": 100000 },
+            "salt_b64": { "type": "string" },
+            "iv_b64": { "type": "string", "description": "GCM 随机 12 字节 IV，Base64。" }
+          }
+        }
+      }
+    },
+    "sensitivity": {
+      "description": "敏感度分层声明：哪些字段属于隐私层/机密层，供导出与云端上传决策。",
+      "type": "object",
+      "required": ["public", "private", "secret"],
+      "additionalProperties": false,
+      "properties": {
+        "public": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "可明文/可上传：如 persona、tone、output_style。"
+        },
+        "private": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "需加密、默认不上传：如 habit、schedule、common_software。"
+        },
+        "secret": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "必须加密、禁止上传：如精确地点、时间轴细节、通信记录。"
+        }
+      }
+    },
+    "source": {
+      "description": "来源信息：设备匿名标识与命名方式。",
+      "type": "object",
+      "required": ["source_device", "naming"],
+      "additionalProperties": false,
+      "properties": {
+        "source_device": { "type": "string" },
+        "naming": {
+          "type": "object",
+          "required": ["scheme", "anonymous"],
+          "additionalProperties": false,
+          "properties": {
+            "scheme": {
+              "type": "string",
+              "enum": ["timestamp+host-hash+user", "custom"],
+              "description": "timestamp+host-hash+user 为默认匿名命名；custom 为用户自定义。"
+            },
+            "anonymous": { "type": "boolean" },
+            "custom_name": { "type": ["string", "null"] }
+          }
+        }
+      }
+    }
+  }
+}
